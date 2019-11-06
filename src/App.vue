@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import PlayGround from './views/play-ground.vue';
+import PlayGround from './views/play-ground/play-ground.vue';
 
 @Component({
   components: {
