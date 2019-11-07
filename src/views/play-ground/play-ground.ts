@@ -5,6 +5,7 @@ import ShapeComponent from '@/components/shape/shape.vue';
 import Coordinate from '@/models/Coordinate';
 import { drawShape, drawCorner, isInPath, isInCorner } from '@/utils/ctxUtil';
 import Corners from '@/models/Corners';
+import { generateRandomRectangle } from '@/utils/randomUtil';
 
 @Component({
   name: 'play-ground',
@@ -44,6 +45,12 @@ export default class PlayGround extends Vue {
 
   protected beforeDestroy() {
     (this.$refs.playGround as HTMLCanvasElement).removeEventListener('mousemove', this.onMouseMove, false);
+  }
+
+  protected addRectangle() {
+    const rect = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
+
+    this.shapes.push(generateRandomRectangle(rect.width, rect.height));
   }
 
   private onMouseDown(event: MouseEvent) {
