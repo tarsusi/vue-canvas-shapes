@@ -1,5 +1,16 @@
 <div class="play-ground">
-  <canvas ref="playGround" id="play-ground-canvas" width="600" height="500" tabindex="0" @keydown.esc="onESC"></canvas>
+  <canvas
+    ref="playGround"
+    id="play-ground-canvas"
+    width="600"
+    height="500"
+    tabindex="0"
+    @keydown.left="onLeftKey"
+    @keydown.right="onRightKey"
+    @keydown.up="onUpKey"
+    @keydown.down="onDownKey"
+    @keydown.esc="onESC"
+  ></canvas>
   <button class="add-rectangle-button" aria-label="Add Rectangle" @click="addRectangle">+</button>
   <button class="delete-shape-button" aria-label="Delete Shape" @click="deleteShape" v-if="selectedShapeId !== -1">
     Delete

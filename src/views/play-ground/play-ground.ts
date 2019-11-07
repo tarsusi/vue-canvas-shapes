@@ -1,7 +1,6 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import shapeService from '@/services/shape.service';
 import Shape from '@/models/Shape';
-import ShapeComponent from '@/components/shape/shape.vue';
 import Coordinate from '@/models/Coordinate';
 import { drawShape, drawCorner, isInPath, isInCorner } from '@/utils/ctxUtil';
 import Corners from '@/models/Corners';
@@ -9,9 +8,6 @@ import { generateRandomRectangle } from '@/utils/randomUtil';
 
 @Component({
   name: 'play-ground',
-  components: {
-    shape: ShapeComponent,
-  },
 })
 export default class PlayGround extends Vue {
   public ctx: CanvasRenderingContext2D | null = this.getContextValue();
@@ -68,6 +64,46 @@ export default class PlayGround extends Vue {
       this.corners = { coordinates: [], shapeId: -1 };
       this.drawShapes();
     }
+  }
+
+  protected onArrowKey(movementFunction: (coordinate: Coordinate) => Coordinate) {
+    if (this.selectedShapeId !== -1) {
+      const shapeIndex = this.shapes.findIndex((shape) => shape.id === this.selectedShapeId);
+      this.shapes[shapeIndex] = {
+        ...this.shapes[shapeIndex],
+        coordinates: this.shapes[shapeIndex].coordinates.map(movementFunction),
+      };
+
+      this.corners.coordinates = this.corners.coordinates.map(movementFunction);
+
+      this.drawShapes();
+    }
+  }
+
+  protected onLeftKey() {
+    this.onArrowKey((coordinate) => ({
+      x: coordinate.x - 5,
+      y: coordinate.y,
+    }));
+  }
+
+  protected onRightKey() {
+    this.onArrowKey((coordinate) => ({
+      x: coordinate.x + 5,
+      y: coordinate.y,
+    }));
+  }
+  protected onUpKey() {
+    this.onArrowKey((coordinate) => ({
+      x: coordinate.x,
+      y: coordinate.y - 5,
+    }));
+  }
+  protected onDownKey() {
+    this.onArrowKey((coordinate) => ({
+      x: coordinate.x,
+      y: coordinate.y + 5,
+    }));
   }
 
   private onMouseDown(event: MouseEvent) {
