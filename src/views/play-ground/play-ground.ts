@@ -83,7 +83,7 @@ export default class PlayGround extends Vue {
 
     this.selectedShapeId = (clickedShape && clickedShape.id) || -1;
 
-    if (this.selectedShapeId === -1) {
+    if (this.selectedShapeId === -1 && this.draggingCornerIndex === -1) {
       this.corners = { coordinates: [], shapeId: -1 };
       this.drawShapes();
     }
