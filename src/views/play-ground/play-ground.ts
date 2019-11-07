@@ -19,6 +19,7 @@ export default class PlayGround extends Vue {
   protected shapes: Shape[] = [];
   protected corners: Corners = { coordinates: [], shapeId: -1 };
   protected draggingCornerIndex: number = -1;
+  protected selectedShapeId: number = -1;
 
   public getContextValue() {
     const canvasEl = this.$refs.playGround as HTMLCanvasElement;
@@ -53,6 +54,22 @@ export default class PlayGround extends Vue {
     this.shapes.push(generateRandomRectangle(rect.width, rect.height));
   }
 
+  protected deleteShape() {
+    const shapeIndex = this.shapes.findIndex((shape) => shape.id === this.selectedShapeId);
+
+    this.shapes.splice(shapeIndex, 1);
+    this.corners = { coordinates: [], shapeId: -1 };
+    this.selectedShapeId = -1;
+  }
+
+  protected onESC() {
+    if (this.selectedShapeId !== -1) {
+      this.selectedShapeId = -1;
+      this.corners = { coordinates: [], shapeId: -1 };
+      this.drawShapes();
+    }
+  }
+
   private onMouseDown(event: MouseEvent) {
     const rect = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -61,6 +78,15 @@ export default class PlayGround extends Vue {
     this.draggingCornerIndex = this.corners.coordinates.findIndex((corner: Coordinate) =>
       isInCorner(this.ctx, corner, { x, y }),
     );
+
+    const clickedShape = this.shapes.find((shape: Shape) => isInPath(this.ctx, { x, y }, shape));
+
+    this.selectedShapeId = (clickedShape && clickedShape.id) || -1;
+
+    if (this.selectedShapeId === -1) {
+      this.corners = { coordinates: [], shapeId: -1 };
+      this.drawShapes();
+    }
   }
 
   private onMouseUp() {
@@ -82,7 +108,9 @@ export default class PlayGround extends Vue {
       this.shapes[draggedShapeIndex].coordinates = this.corners.coordinates;
       this.drawShapes();
     } else {
-      const shapeCollided = this.shapes.find((shape: Shape) => isInPath(this.ctx, { x, y }, shape));
+      const shapeCollided = this.shapes.find(
+        (shape: Shape) => isInPath(this.ctx, { x, y }, shape) || this.selectedShapeId === shape.id,
+      );
       const cornerCollided = this.corners.coordinates.find((corner: Coordinate) =>
         isInCorner(this.ctx, corner, { x, y }),
       );

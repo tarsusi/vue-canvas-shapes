@@ -1,5 +1,7 @@
 #play-ground-canvas {
     background-color: azure;
+
+    outline: none;
 }
 
 .add-rectangle-button {
@@ -20,5 +22,26 @@
     border-radius: 50%;
 
     outline: none;
+    cursor: pointer;
+}
+
+.delete-shape-button {
+    position: absolute;
+    right: 40px;
+    top: 40px;
+
+    padding: 10px;
+
+    color: white;
+
+    background-color: red;
+
+    outline: none;
+    border: 0;
+    border-radius: 4px;
+
+    font-size: 18px;
+    font-weight: bold;
+
     cursor: pointer;
 }
