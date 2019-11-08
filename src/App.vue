@@ -25,4 +25,17 @@ export default class App extends Vue {}
   color: #2c3e50;
   margin-top: 60px;
 }
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  margin: 0;
+  padding: 0;
+}
 </style>

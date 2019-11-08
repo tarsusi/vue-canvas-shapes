@@ -1,9 +1,7 @@
-<div class="play-ground">
+<div class="play-ground" @keydown.cmd.90="undoHistory" @keydown.ctrl.90="undoHistory">
   <canvas
     ref="playGround"
     id="play-ground-canvas"
-    width="600"
-    height="500"
     tabindex="0"
     @keydown.left="onLeftKey"
     @keydown.right="onRightKey"
@@ -13,8 +11,6 @@
     @mouseup="onMouseUp"
     @mousemove="onMouseMove"
     @mousedown="onMouseDown"
-    @keydown.cmd.90="undoHistory"
-    @keydown.ctrl.90="undoHistory"
   ></canvas>
   <button class="add-rectangle-button" aria-label="Add Rectangle" @click="addRectangle">+</button>
   <button class="delete-shape-button" aria-label="Delete Shape" @click="deleteShape" v-if="selectedShapeId !== -1">

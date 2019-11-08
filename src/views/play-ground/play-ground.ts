@@ -39,6 +39,10 @@ export default class PlayGround extends Vue {
   }
 
   public async mounted() {
+    const canvasEl = this.$refs.playGround as HTMLCanvasElement;
+    canvasEl.width = window.innerWidth * 0.9;
+    canvasEl.height = window.innerHeight * 0.9;
+
     this.ctx = this.getContextValue();
 
     this.shapes = await shapeService.getShapes();
@@ -72,6 +76,8 @@ export default class PlayGround extends Vue {
     this.clearCorners();
 
     this.storeCurrentHistory(this.shapes, { coordinates: [], shapeId: SHAPE_ID_NO_VALUE }, this.selectedShapeId);
+
+    (this.$refs.playGround as HTMLCanvasElement).focus();
   }
 
   protected undoHistory() {
