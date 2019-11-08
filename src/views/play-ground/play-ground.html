@@ -10,6 +10,9 @@
     @keydown.up="onUpKey"
     @keydown.down="onDownKey"
     @keydown.esc="onESC"
+    @mouseup="onMouseUp"
+    @mousemove="onMouseMove"
+    @mousedown="onMouseDown"
   ></canvas>
   <button class="add-rectangle-button" aria-label="Add Rectangle" @click="addRectangle">+</button>
   <button class="delete-shape-button" aria-label="Delete Shape" @click="deleteShape" v-if="selectedShapeId !== -1">

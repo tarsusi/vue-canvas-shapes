@@ -1,6 +1,6 @@
 import Shape from '@/models/Shape';
 import Coordinate from '@/models/Coordinate';
-import { ARC_RADIUS, ARC_START_ANGLE, ARC_END_ANGLE } from '@/constants/generalConstants';
+import { ARC_RADIUS, ARC_START_ANGLE, ARC_END_ANGLE, ARC_FILL_COLOR } from '@/constants/generalConstants';
 
 type CanvasContext = CanvasRenderingContext2D | null;
 
@@ -25,8 +25,8 @@ export const drawCorner = (ctx: CanvasContext, corner: Coordinate) => {
   if (ctx) {
     ctx.beginPath();
     ctx.arc(corner.x, corner.y, ARC_RADIUS, ARC_START_ANGLE, ARC_END_ANGLE);
-    ctx.fillStyle = 'grey';
-    ctx.strokeStyle = 'grey';
+    ctx.fillStyle = ARC_FILL_COLOR;
+    ctx.strokeStyle = ARC_FILL_COLOR;
     ctx.fill();
     ctx.stroke();
   }

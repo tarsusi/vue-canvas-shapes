@@ -5,6 +5,7 @@ import Coordinate from '@/models/Coordinate';
 import { drawShape, drawCorner, isInPath, isInCorner } from '@/utils/ctxUtil';
 import Corners from '@/models/Corners';
 import { generateRandomRectangle } from '@/utils/randomUtil';
+import { CORNER_INDEX_NO_VALUE, SHAPE_ID_NO_VALUE, COORDINATE_INCREMENT } from '@/constants/generalConstants';
 
 @Component({
   name: 'play-ground',
@@ -13,9 +14,9 @@ export default class PlayGround extends Vue {
   public ctx: CanvasRenderingContext2D | null = this.getContextValue();
 
   protected shapes: Shape[] = [];
-  protected corners: Corners = { coordinates: [], shapeId: -1 };
-  protected draggingCornerIndex: number = -1;
-  protected selectedShapeId: number = -1;
+  protected corners: Corners = { coordinates: [], shapeId: SHAPE_ID_NO_VALUE };
+  protected draggingCornerIndex: number = CORNER_INDEX_NO_VALUE;
+  protected selectedShapeId: number = SHAPE_ID_NO_VALUE;
 
   public getContextValue() {
     const canvasEl = this.$refs.playGround as HTMLCanvasElement;
@@ -26,49 +27,42 @@ export default class PlayGround extends Vue {
     this.ctx = this.getContextValue();
 
     this.shapes = await shapeService.getShapes();
-
-    (this.$refs.playGround as HTMLCanvasElement).addEventListener('mousemove', this.onMouseMove, false);
-    (this.$refs.playGround as HTMLCanvasElement).addEventListener('mousedown', this.onMouseDown, false);
-    (this.$refs.playGround as HTMLCanvasElement).addEventListener('mouseup', this.onMouseUp, false);
   }
 
-  @Watch('shapes') protected onShapesChanged(shapes: Shape[], oldShapes: Shape[]) {
+  @Watch('shapes') protected onShapesChanged() {
     this.drawShapes();
   }
 
-  @Watch('corners') protected onCornersChanged(corners: Coordinate[], oldCorners: Coordinate[]) {
+  @Watch('corners') protected onCornersChanged() {
     this.drawShapes();
-  }
-
-  protected beforeDestroy() {
-    (this.$refs.playGround as HTMLCanvasElement).removeEventListener('mousemove', this.onMouseMove, false);
   }
 
   protected addRectangle() {
-    const rect = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
+    const { width: canvasWidth, height: canvasHeight } = (this.$refs
+      .playGround as HTMLCanvasElement).getBoundingClientRect();
 
-    this.shapes.push(generateRandomRectangle(rect.width, rect.height));
+    this.shapes.push(generateRandomRectangle(canvasWidth, canvasHeight));
   }
 
   protected deleteShape() {
     const shapeIndex = this.shapes.findIndex((shape) => shape.id === this.selectedShapeId);
 
     this.shapes.splice(shapeIndex, 1);
-    this.corners = { coordinates: [], shapeId: -1 };
-    this.selectedShapeId = -1;
+    this.selectedShapeId = SHAPE_ID_NO_VALUE;
+    this.clearCorners();
   }
 
   protected onESC() {
-    if (this.selectedShapeId !== -1) {
-      this.selectedShapeId = -1;
-      this.corners = { coordinates: [], shapeId: -1 };
-      this.drawShapes();
+    if (this.hasAnySelectedShape()) {
+      this.selectedShapeId = SHAPE_ID_NO_VALUE;
+      this.clearCorners();
     }
   }
 
   protected onArrowKey(movementFunction: (coordinate: Coordinate) => Coordinate) {
-    if (this.selectedShapeId !== -1) {
+    if (this.hasAnySelectedShape()) {
       const shapeIndex = this.shapes.findIndex((shape) => shape.id === this.selectedShapeId);
+
       this.shapes[shapeIndex] = {
         ...this.shapes[shapeIndex],
         coordinates: this.shapes[shapeIndex].coordinates.map(movementFunction),
@@ -82,73 +76,73 @@ export default class PlayGround extends Vue {
 
   protected onLeftKey() {
     this.onArrowKey((coordinate) => ({
-      x: coordinate.x - 5,
+      x: coordinate.x - COORDINATE_INCREMENT,
       y: coordinate.y,
     }));
   }
 
   protected onRightKey() {
     this.onArrowKey((coordinate) => ({
-      x: coordinate.x + 5,
+      x: coordinate.x + COORDINATE_INCREMENT,
       y: coordinate.y,
     }));
   }
+
   protected onUpKey() {
     this.onArrowKey((coordinate) => ({
       x: coordinate.x,
-      y: coordinate.y - 5,
+      y: coordinate.y - COORDINATE_INCREMENT,
     }));
   }
+
   protected onDownKey() {
     this.onArrowKey((coordinate) => ({
       x: coordinate.x,
-      y: coordinate.y + 5,
+      y: coordinate.y + COORDINATE_INCREMENT,
     }));
   }
 
-  private onMouseDown(event: MouseEvent) {
-    const rect = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+  protected onMouseDown(event: MouseEvent) {
+    const mouseCoordinate = this.getMouseCoordinate(event);
 
     this.draggingCornerIndex = this.corners.coordinates.findIndex((corner: Coordinate) =>
-      isInCorner(this.ctx, corner, { x, y }),
+      isInCorner(this.ctx, corner, mouseCoordinate),
     );
 
-    const clickedShape = this.shapes.find((shape: Shape) => isInPath(this.ctx, { x, y }, shape));
+    const clickedShape = this.shapes.find((shape: Shape) => isInPath(this.ctx, mouseCoordinate, shape));
 
-    this.selectedShapeId = (clickedShape && clickedShape.id) || -1;
+    this.selectedShapeId = (clickedShape && clickedShape.id) || SHAPE_ID_NO_VALUE;
 
-    if (this.selectedShapeId === -1 && this.draggingCornerIndex === -1) {
-      this.corners = { coordinates: [], shapeId: -1 };
+    if (!this.hasAnySelectedShape() && !this.hasAnyDraggingCorner()) {
+      this.clearCorners();
       this.drawShapes();
     }
   }
 
-  private onMouseUp() {
-    this.draggingCornerIndex = -1;
+  protected onMouseUp() {
+    this.draggingCornerIndex = CORNER_INDEX_NO_VALUE;
   }
 
-  private onMouseMove(event: MouseEvent) {
+  protected onMouseMove(event: MouseEvent) {
     if (!this.ctx) {
       return;
     }
 
-    const rect = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const mouseCoordinate = this.getMouseCoordinate(event);
 
-    if (this.draggingCornerIndex > -1) {
-      this.corners.coordinates[this.draggingCornerIndex] = { x, y };
+    if (this.draggingCornerIndex > CORNER_INDEX_NO_VALUE) {
       const draggedShapeIndex = this.shapes.findIndex((shape) => shape.id === this.corners.shapeId);
+
+      this.corners.coordinates[this.draggingCornerIndex] = mouseCoordinate;
       this.shapes[draggedShapeIndex].coordinates = this.corners.coordinates;
+
       this.drawShapes();
     } else {
       const shapeCollided = this.shapes.find(
-        (shape: Shape) => isInPath(this.ctx, { x, y }, shape) || this.selectedShapeId === shape.id,
+        (shape: Shape) => isInPath(this.ctx, mouseCoordinate, shape) || this.selectedShapeId === shape.id,
       );
       const cornerCollided = this.corners.coordinates.find((corner: Coordinate) =>
-        isInCorner(this.ctx, corner, { x, y }),
+        isInCorner(this.ctx, corner, mouseCoordinate),
       );
 
       if (shapeCollided && !this.corners.coordinates.length) {
@@ -159,15 +153,35 @@ export default class PlayGround extends Vue {
           this.corners.coordinates.push(element);
         }
       } else if (!shapeCollided && this.corners.coordinates.length && !cornerCollided) {
-        this.corners = { coordinates: [], shapeId: -1 };
+        this.clearCorners();
       }
     }
   }
 
+  private getMouseCoordinate(event: MouseEvent): Coordinate {
+    const { left: canvasLeft, top: canvasTop } = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
+
+    return { x: event.clientX - canvasLeft, y: event.clientY - canvasTop };
+  }
+
+  private hasAnySelectedShape() {
+    return this.selectedShapeId !== SHAPE_ID_NO_VALUE;
+  }
+
+  private hasAnyDraggingCorner() {
+    return this.draggingCornerIndex !== CORNER_INDEX_NO_VALUE;
+  }
+
+  private clearCorners() {
+    this.corners = { coordinates: [], shapeId: SHAPE_ID_NO_VALUE };
+  }
+
   private drawShapes() {
-    const rect = (this.$refs.playGround as HTMLCanvasElement).getBoundingClientRect();
+    const { width: canvasWidth, height: canvasHeight } = (this.$refs
+      .playGround as HTMLCanvasElement).getBoundingClientRect();
+
     if (this.ctx) {
-      this.ctx.clearRect(0, 0, rect.width, rect.height);
+      this.ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     }
 
     this.shapes.forEach((shape) => drawShape(this.ctx, shape));
