@@ -13,6 +13,8 @@
     @mouseup="onMouseUp"
     @mousemove="onMouseMove"
     @mousedown="onMouseDown"
+    @keydown.cmd.90="undoHistory"
+    @keydown.ctrl.90="undoHistory"
   ></canvas>
   <button class="add-rectangle-button" aria-label="Add Rectangle" @click="addRectangle">+</button>
   <button class="delete-shape-button" aria-label="Delete Shape" @click="deleteShape" v-if="selectedShapeId !== -1">

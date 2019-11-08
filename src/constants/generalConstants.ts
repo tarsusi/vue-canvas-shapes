@@ -10,3 +10,5 @@ export const COORDINATE_INCREMENT = 8;
 
 export const CORNER_INDEX_NO_VALUE = -1;
 export const SHAPE_ID_NO_VALUE = -1;
+
+export const DEBOUNCE_TIMEOUT = 250;

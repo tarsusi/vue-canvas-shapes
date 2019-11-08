@@ -5,7 +5,14 @@ import Coordinate from '@/models/Coordinate';
 import { drawShape, drawCorner, isInPath, isInCorner } from '@/utils/ctxUtil';
 import Corners from '@/models/Corners';
 import { generateRandomRectangle } from '@/utils/randomUtil';
-import { CORNER_INDEX_NO_VALUE, SHAPE_ID_NO_VALUE, COORDINATE_INCREMENT } from '@/constants/generalConstants';
+import {
+  CORNER_INDEX_NO_VALUE,
+  SHAPE_ID_NO_VALUE,
+  COORDINATE_INCREMENT,
+  DEBOUNCE_TIMEOUT,
+} from '@/constants/generalConstants';
+import debounce from 'lodash/debounce';
+import cloneDeep from 'lodash/cloneDeep';
 
 @Component({
   name: 'play-ground',
@@ -17,6 +24,14 @@ export default class PlayGround extends Vue {
   protected corners: Corners = { coordinates: [], shapeId: SHAPE_ID_NO_VALUE };
   protected draggingCornerIndex: number = CORNER_INDEX_NO_VALUE;
   protected selectedShapeId: number = SHAPE_ID_NO_VALUE;
+  protected debouncedAddHistory: () => void;
+  protected isCtrlPressed = false;
+
+  constructor() {
+    super();
+
+    this.debouncedAddHistory = debounce(this.storeCurrentHistory, DEBOUNCE_TIMEOUT);
+  }
 
   public getContextValue() {
     const canvasEl = this.$refs.playGround as HTMLCanvasElement;
@@ -27,6 +42,8 @@ export default class PlayGround extends Vue {
     this.ctx = this.getContextValue();
 
     this.shapes = await shapeService.getShapes();
+
+    this.storeCurrentHistory(this.shapes, { coordinates: [], shapeId: SHAPE_ID_NO_VALUE }, this.selectedShapeId);
   }
 
   @Watch('shapes') protected onShapesChanged() {
@@ -42,6 +59,9 @@ export default class PlayGround extends Vue {
       .playGround as HTMLCanvasElement).getBoundingClientRect();
 
     this.shapes.push(generateRandomRectangle(canvasWidth, canvasHeight));
+    this.selectedShapeId = SHAPE_ID_NO_VALUE;
+
+    this.storeCurrentHistory();
   }
 
   protected deleteShape() {
@@ -50,12 +70,28 @@ export default class PlayGround extends Vue {
     this.shapes.splice(shapeIndex, 1);
     this.selectedShapeId = SHAPE_ID_NO_VALUE;
     this.clearCorners();
+
+    this.storeCurrentHistory(this.shapes, { coordinates: [], shapeId: SHAPE_ID_NO_VALUE }, this.selectedShapeId);
+  }
+
+  protected undoHistory() {
+    if (this.$store.state.canvasHistory.length > 1) {
+      this.$store.commit('undoHistory');
+
+      const { shapes, corners, selectedShapeId } = this.$store.getters.lastItem;
+
+      this.shapes = cloneDeep(shapes);
+      this.corners = cloneDeep(corners);
+      this.selectedShapeId = selectedShapeId;
+    }
   }
 
   protected onESC() {
     if (this.hasAnySelectedShape()) {
       this.selectedShapeId = SHAPE_ID_NO_VALUE;
       this.clearCorners();
+
+      this.storeCurrentHistory(this.shapes, { coordinates: [], shapeId: SHAPE_ID_NO_VALUE }, this.selectedShapeId);
     }
   }
 
@@ -71,6 +107,8 @@ export default class PlayGround extends Vue {
       this.corners.coordinates = this.corners.coordinates.map(movementFunction);
 
       this.drawShapes();
+
+      this.storeCurrentHistory();
     }
   }
 
@@ -114,6 +152,10 @@ export default class PlayGround extends Vue {
     this.selectedShapeId = (clickedShape && clickedShape.id) || SHAPE_ID_NO_VALUE;
 
     if (!this.hasAnySelectedShape() && !this.hasAnyDraggingCorner()) {
+      if (this.corners.coordinates.length) {
+        this.storeCurrentHistory(this.shapes, { coordinates: [], shapeId: SHAPE_ID_NO_VALUE }, this.selectedShapeId);
+      }
+
       this.clearCorners();
       this.drawShapes();
     }
@@ -137,10 +179,13 @@ export default class PlayGround extends Vue {
       this.shapes[draggedShapeIndex].coordinates = this.corners.coordinates;
 
       this.drawShapes();
+
+      this.debouncedAddHistory();
     } else {
       const shapeCollided = this.shapes.find(
         (shape: Shape) => isInPath(this.ctx, mouseCoordinate, shape) || this.selectedShapeId === shape.id,
       );
+
       const cornerCollided = this.corners.coordinates.find((corner: Coordinate) =>
         isInCorner(this.ctx, corner, mouseCoordinate),
       );
@@ -186,5 +231,17 @@ export default class PlayGround extends Vue {
 
     this.shapes.forEach((shape) => drawShape(this.ctx, shape));
     this.corners.coordinates.forEach((corner) => drawCorner(this.ctx, corner));
+  }
+
+  private storeCurrentHistory(
+    shapes: Shape[] = this.shapes,
+    corners: Corners = this.corners,
+    selectedShapeId: number = this.selectedShapeId,
+  ) {
+    this.$store.commit('addHistory', {
+      shapes: cloneDeep(shapes),
+      corners: cloneDeep(corners),
+      selectedShapeId,
+    });
   }
 }

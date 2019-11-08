@@ -10,6 +10,8 @@
     "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.145",
+    "lodash": "^4.17.15",
     "vue": "^2.6.10",
     "vue-class-component": "^7.0.2",
     "vue-property-decorator": "^8.3.0",
